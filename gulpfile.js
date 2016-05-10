@@ -4,6 +4,11 @@ const webpack = require('webpack-stream');
 gulp.task('webpack-dev', () => {
   gulp.src('app/js/entry.js')
     .pipe(webpack({
+      module: {
+        loaders: [
+          { test: /\.css$/, loader: 'style!css' }
+        ]
+      },
       output: {
         filename: 'bundle.js'
       }

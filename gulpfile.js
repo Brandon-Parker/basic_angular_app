@@ -41,7 +41,7 @@ gulp.task('start:server', () => {
 gulp.task('protractor', () => {
   return gulp.src(['./src/tests/*.js'])
     .pipe(protractor({
-        configFile: 'test/integration/config.js'
+      configFile: 'test/integration/config.js'
     }));
 });
 

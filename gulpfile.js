@@ -1,8 +1,9 @@
 const gulp = require('gulp');
 const eslint = require('gulp-eslint');
 const webpack = require('webpack-stream');
-const exec = require('child_process').exec;
+const cp = require('child_process');
 const protractor = require('gulp-protractor').protractor;
+var children = [];
 
 const appFiles = ['*.js', './app'];
 
@@ -22,28 +23,33 @@ gulp.task('webpack:dev', () => {
     .pipe(gulp.dest('./build'));
 });
 
+gulp.task('lint:dev', () => {
+  return gulp.src(appFiles)
+  .pipe(eslint())
+  .pipe(eslint.format());
+});
+
 gulp.task('static:dev', () => {
   return gulp.src('app/**/*.html')
     .pipe(gulp.dest('./build'));
 });
 
-gulp.task('lint:dev', () => {
-  return gulp.src(appFiles)
-    .pipe(eslint())
-    .pipe(eslint.format());
-});
-
 gulp.task('start:server', () => {
-  exec('node server.js');
-  exec('webdriver-manager start');
+  children.push(cp.fork('server.js'));
+  children.push(cp.spawn('webdriver-manager', ['start']));
 });
 
-gulp.task('protractor', () => {
-  return gulp.src(['./src/tests/*.js'])
+gulp.task('protractor', ['build:dev', 'start:server'], () => {
+  return gulp.src(['./src/tests/db-spec.js'])
     .pipe(protractor({
       configFile: 'test/integration/config.js'
-    }));
+    }))
+      .on('end', () => {
+      children.forEach((child) => {
+      child.kill('SIGTERM');
+    });
+  });
 });
 
-gulp.task('build-dev', ['lint:dev', 'webpack:dev', 'static:dev', 'start:server', 'protractor']);
-gulp.task('default', ['build-dev']);
+gulp.task('build:dev', ['lint:dev', 'webpack:dev', 'static:dev']);
+gulp.task('default', ['protractor']);
